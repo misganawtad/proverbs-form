@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 
 const ProverbList = () => {
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = 'https://proverbs-db-api.vercel.app';
   const [proverbs, setProverbs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
