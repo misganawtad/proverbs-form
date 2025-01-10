@@ -16,7 +16,7 @@ const ProverbForm = () => {
     successStories: ''
   };
   
-  const API_URL = 'https://proverbs-db-api.vercel.app';
+  const API_URL = '/api';
   const [formData, setFormData] = useState(initialFormState);
   const [message, setMessage] = useState('');
 
