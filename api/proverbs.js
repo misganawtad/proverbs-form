@@ -1,30 +1,34 @@
-// api/test.js
-import { MongoClient } from 'mongodb';
+import { connectToDatabase } from './utils/mongodb';
 
 export default async function handler(req, res) {
   try {
-    // Simple connection test
-    const client = await MongoClient.connect(process.env.MONGODB_URI);
-    const db = client.db('proverbs');
+    // Connect to database
+    const { db } = await connectToDatabase();
     
-    // Simple database operation
-    const count = await db.collection('proverbs').countDocuments();
+    if (req.method === 'GET') {
+      // Limit to 20 documents and only fetch necessary fields
+      const proverbs = await db.collection('proverbs')
+        .find({})
+        .limit(20)
+        .project({ originalText: 1, language: 1, country: 1 })
+        .toArray();
+      
+      return res.status(200).json(proverbs);
+    }
     
-    // Close connection
-    await client.close();
-    
-    // Return success
-    res.status(200).json({ 
-      status: 'success',
-      message: 'Connected to MongoDB',
-      count: count
-    });
-    
+    if (req.method === 'POST') {
+      if (!req.body) {
+        return res.status(400).json({ error: 'No data provided' });
+      }
+      
+      const result = await db.collection('proverbs').insertOne(req.body);
+      return res.status(201).json(result);
+    }
+
+    return res.status(405).json({ error: 'Method not allowed' });
+
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ 
-      status: 'error', 
-      message: error.message 
-    });
+    console.error('Database error:', error);
+    return res.status(500).json({ error: 'Database operation failed' });
   }
 }
