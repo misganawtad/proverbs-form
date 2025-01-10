@@ -1,41 +1,37 @@
-// api/proverbs.js
+// api/hello.js
 import { MongoClient } from 'mongodb';
 
+// Create cached connection variable
 let cachedDb = null;
 
+// Function to connect to MongoDB
 async function connectToDatabase() {
   if (cachedDb) {
     return cachedDb;
   }
 
+  // Connect to MongoDB
   const client = await MongoClient.connect(process.env.MONGODB_URI);
-  const db = client.db('proverbs');
-  
+  const db = client.db('proverbs'); // your database name
+
   cachedDb = db;
   return db;
 }
 
 export default async function handler(req, res) {
   try {
+    // Connect to database
     const db = await connectToDatabase();
-    const collection = db.collection('proverbs');
-
-    switch (req.method) {
-      case 'GET':
-        const proverbs = await collection.find({}).toArray();
-        res.status(200).json(proverbs);
-        break;
-
-      case 'POST':
-        const result = await collection.insertOne(req.body);
-        res.status(201).json(result);
-        break;
-
-      default:
-        res.status(405).json({ message: 'Method not allowed' });
-    }
+    
+    // Simple test: count documents in proverbs collection
+    const count = await db.collection('proverbs').countDocuments();
+    
+    res.status(200).json({ 
+      message: 'Connected to MongoDB!',
+      proverbCount: count 
+    });
   } catch (error) {
-    console.error('Database error:', error);
-    res.status(500).json({ error: 'Database operation failed' });
+    console.error('Database connection error:', error);
+    res.status(500).json({ error: 'Failed to connect to database' });
   }
 }
