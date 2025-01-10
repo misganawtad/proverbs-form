@@ -1,37 +1,39 @@
-// api/hello.js
+// api/test.js
 import { MongoClient } from 'mongodb';
-
-// Create cached connection variable
-let cachedDb = null;
-
-// Function to connect to MongoDB
-async function connectToDatabase() {
-  if (cachedDb) {
-    return cachedDb;
-  }
-
-  // Connect to MongoDB
-  const client = await MongoClient.connect(process.env.MONGODB_URI);
-  const db = client.db('proverbs'); // your database name
-
-  cachedDb = db;
-  return db;
-}
 
 export default async function handler(req, res) {
   try {
-    // Connect to database
-    const db = await connectToDatabase();
-    
-    // Simple test: count documents in proverbs collection
-    const count = await db.collection('proverbs').countDocuments();
-    
-    res.status(200).json({ 
-      message: 'Connected to MongoDB!',
-      proverbCount: count 
+    // Log the MongoDB URI (remove password for security)
+    const redactedUri = process.env.MONGODB_URI 
+      ? process.env.MONGODB_URI.replace(/:([^@]+)@/, ':***@')
+      : 'Not defined';
+    console.log('Attempting connection with:', redactedUri);
+
+    // Attempt connection
+    const client = await MongoClient.connect(process.env.MONGODB_URI, {
+      maxPoolSize: 1,
+      serverSelectionTimeoutMS: 5000
     });
+
+    // Test the connection
+    const db = client.db('proverbs');
+    await db.command({ ping: 1 });
+
+    // Close connection
+    await client.close();
+
+    // Return success
+    return res.status(200).json({ 
+      status: 'success', 
+      message: 'Successfully connected to MongoDB' 
+    });
+
   } catch (error) {
-    console.error('Database connection error:', error);
-    res.status(500).json({ error: 'Failed to connect to database' });
+    console.error('Connection test error:', error);
+    return res.status(500).json({ 
+      status: 'error',
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
   }
 }
