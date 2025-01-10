@@ -38,39 +38,32 @@ const ProverbForm = () => {
     }
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setMessage('Submitting...');
+ const handleSubmit = async (e) => {
+  e.preventDefault();
+  setMessage('Submitting...');
 
-    try {
-      if (!formData.moodCategory) {
-        setMessage('Please select a mood category');
-        return;
-      }
+  try {
+    const response = await fetch(`${API_URL}/proverbs`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(formData)
+    });
 
-      const response = await fetch(`${API_URL}/proverbs`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(formData)
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to submit proverb');
-      }
-
-      const data = await response.json();
-      
-      // Show success message with proverb details
-      setMessage(`Proverb "${formData.originalText}" has been successfully submitted in ${formData.language}!`);
-      setFormData(initialFormState);
-    } catch (error) {
-      setMessage('Error submitting proverb: ' + error.message);
-      console.error('Submission error:', error);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || 'Failed to submit proverb');
     }
-  };
+
+    const data = await response.json();
+    setMessage(`Proverb "${formData.originalText}" has been successfully submitted!`);
+    setFormData(initialFormState);
+  } catch (error) {
+    setMessage('Error submitting proverb: ' + error.message);
+    console.error('Submission error:', error);
+  }
+};
 
   // Common styles
   const sectionClass = "bg-white rounded-lg shadow-md p-6 mb-6";
