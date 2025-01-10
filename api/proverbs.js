@@ -1,26 +1,41 @@
-import clientPromise from '../../lib/mongodb';
-import mongoose from 'mongoose';
-import Proverb from '../../models/Proverb';
+// api/proverbs.js
+import { MongoClient } from 'mongodb';
 
-export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+let cachedDb = null;
+
+async function connectToDatabase() {
+  if (cachedDb) {
+    return cachedDb;
   }
 
+  const client = await MongoClient.connect(process.env.MONGODB_URI);
+  const db = client.db('proverbs');
+  
+  cachedDb = db;
+  return db;
+}
+
+export default async function handler(req, res) {
   try {
-    // Connect to MongoDB
-    const client = await clientPromise;
-    const db = client.db("proverbs");
-    
-    // Create new proverb document
-    const proverb = new Proverb(req.body);
-    
-    // Save to database
-    await db.collection('proverbs').insertOne(proverb);
-    
-    res.status(201).json({ message: 'Proverb saved successfully', proverb });
+    const db = await connectToDatabase();
+    const collection = db.collection('proverbs');
+
+    switch (req.method) {
+      case 'GET':
+        const proverbs = await collection.find({}).toArray();
+        res.status(200).json(proverbs);
+        break;
+
+      case 'POST':
+        const result = await collection.insertOne(req.body);
+        res.status(201).json(result);
+        break;
+
+      default:
+        res.status(405).json({ message: 'Method not allowed' });
+    }
   } catch (error) {
-    console.error('Error saving proverb:', error);
-    res.status(500).json({ message: 'Error saving proverb', error: error.message });
+    console.error('Database error:', error);
+    res.status(500).json({ error: 'Database operation failed' });
   }
 }
